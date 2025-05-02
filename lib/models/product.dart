@@ -4,11 +4,13 @@ class Product {
   final String description;
   final double price;
   final String imageUrl;
-  final String category;
+  final List<String>? categories;
+  final List<String>? ingredients;
+  final bool isAvailable;
   final bool isOnSale;
-  final double? salePrice;
+  final String category;
   bool isFavorite;
-  final List<String> ingredients;
+  final double? salePrice;
 
   Product({
     required this.id,
@@ -16,41 +18,77 @@ class Product {
     required this.description,
     required this.price,
     required this.imageUrl,
-    required this.category,
+    this.categories = const [],
+    this.ingredients = const [],
+    this.isAvailable = true,
     this.isOnSale = false,
-    this.salePrice,
+    required this.category,
     this.isFavorite = false,
-    required this.ingredients,
+    this.salePrice,
   });
 
-  factory Product.fromJson(Map<String, dynamic> json) {
-    return Product(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String,
-      price: (json['price'] as num).toDouble(),
-      imageUrl: json['imageUrl'] as String,
-      category: json['category'] as String,
-      isOnSale: json['isOnSale'] as bool,
-      salePrice: json['salePrice'] as double?,
-      isFavorite: json['isFavorite'] as bool,
-      ingredients: List<String>.from(json['ingredients'] as List),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
       'description': description,
       'price': price,
       'imageUrl': imageUrl,
-      'category': category,
+      'categories': categories ?? [],
+      'ingredients': ingredients ?? [],
+      'isAvailable': isAvailable,
       'isOnSale': isOnSale,
-      'salePrice': salePrice,
+      'category': category,
       'isFavorite': isFavorite,
-      'ingredients': ingredients,
+      'salePrice': salePrice,
     };
+  }
+
+  factory Product.fromMap(Map<String, dynamic> map) {
+    return Product(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      description: map['description'] as String,
+      price: map['price'] as double,
+      imageUrl: map['imageUrl'] as String,
+      categories: map['categories'] != null ? List<String>.from(map['categories'] as List) : [],
+      ingredients: map['ingredients'] != null ? List<String>.from(map['ingredients'] as List) : [],
+      isAvailable: map['isAvailable'] as bool? ?? true,
+      isOnSale: map['isOnSale'] as bool? ?? false,
+      category: map['category'] as String,
+      isFavorite: map['isFavorite'] as bool? ?? false,
+      salePrice: map['salePrice'] as double?,
+    );
+  }
+
+  Product copyWith({
+    String? id,
+    String? name,
+    String? description,
+    double? price,
+    String? imageUrl,
+    List<String>? categories,
+    List<String>? ingredients,
+    bool? isAvailable,
+    bool? isOnSale,
+    String? category,
+    bool? isFavorite,
+    double? salePrice,
+  }) {
+    return Product(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      imageUrl: imageUrl ?? this.imageUrl,
+      categories: categories ?? this.categories,
+      ingredients: ingredients ?? this.ingredients,
+      isAvailable: isAvailable ?? this.isAvailable,
+      isOnSale: isOnSale ?? this.isOnSale,
+      category: category ?? this.category,
+      isFavorite: isFavorite ?? this.isFavorite,
+      salePrice: salePrice ?? this.salePrice,
+    );
   }
 
   void toggleFavorite() {

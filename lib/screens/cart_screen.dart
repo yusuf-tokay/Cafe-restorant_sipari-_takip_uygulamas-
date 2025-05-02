@@ -1,105 +1,147 @@
 import 'package:flutter/material.dart';
-import '../models/cart_item.dart';
+import 'package:provider/provider.dart';
+import '../providers/cart_provider.dart';
 
 class CartScreen extends StatelessWidget {
-  // Örnek sepet öğeleri (gerçek uygulamada provider veya bloc'tan gelecek)
-  final List<CartItem> cartItems = [
-    CartItem(
-      id: '1',
-      productId: '1',
-      name: 'Karışık Pizza',
-      quantity: 2,
-      price: 120.0,
-      imageUrl: 'https://example.com/pizza.jpg',
-    ),
-  ];
-
-  CartScreen({Key? key}) : super(key: key);
-
-  double get totalAmount {
-    return cartItems.fold(0, (sum, item) => sum + item.total);
-  }
+  const CartScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final cartProvider = Provider.of<CartProvider>(context);
+    final cartItems = cartProvider.items;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sepetim'),
+        centerTitle: true,
       ),
       body: cartItems.isEmpty
-          ? const Center(
-              child: Text(
-                'Sepetiniz boş',
-                style: TextStyle(fontSize: 18),
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.shopping_cart_outlined,
+                    size: 64,
+                    color: Colors.grey[400],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Sepetiniz boş',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/home');
+                    },
+                    child: const Text('Alışverişe Başla'),
+                  ),
+                ],
               ),
             )
           : Column(
               children: [
-                // Sepet öğeleri listesi
                 Expanded(
                   child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
                     itemCount: cartItems.length,
                     itemBuilder: (context, index) {
                       final item = cartItems[index];
-                      return Dismissible(
-                        key: Key(item.id),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          color: Colors.red,
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          child: const Icon(
-                            Icons.delete,
-                            color: Colors.white,
-                          ),
-                        ),
-                        onDismissed: (direction) {
-                          // TODO: Sepetten ürün silme işlemi
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('${item.name} sepetten çıkarıldı'),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                        child: Card(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundImage: NetworkImage(item.imageUrl),
-                              onBackgroundImageError: (_, __) {},
-                              child: const Icon(Icons.restaurant),
-                            ),
-                            title: Text(item.name),
-                            subtitle: Text('Toplam: ₺${item.total.toStringAsFixed(2)}'),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.remove),
-                                  onPressed: () {
-                                    // TODO: Ürün miktarını azalt
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.asset(
+                                  item.imageUrl,
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      width: 80,
+                                      height: 80,
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.restaurant),
+                                    );
                                   },
                                 ),
-                                Text('${item.quantity}'),
-                                IconButton(
-                                  icon: const Icon(Icons.add),
-                                  onPressed: () {
-                                    // TODO: Ürün miktarını artır
-                                  },
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.name,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '₺${item.price.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                              Column(
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.remove),
+                                        onPressed: () {
+                                          cartProvider.updateQuantity(
+                                            item.productId,
+                                            item.quantity - 1,
+                                          );
+                                        },
+                                      ),
+                                      Text(
+                                        '${item.quantity}',
+                                        style: const TextStyle(fontSize: 16),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.add),
+                                        onPressed: () {
+                                          cartProvider.updateQuantity(
+                                            item.productId,
+                                            item.quantity + 1,
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  Text(
+                                    '₺${item.total.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       );
                     },
                   ),
                 ),
-                // Toplam tutar ve sipariş ver butonu
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -120,15 +162,31 @@ class CartScreen extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
+                            const Text('Ara Toplam:'),
+                            Text('₺${cartProvider.totalAmount.toStringAsFixed(2)}'),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Kargo Ücreti:'),
+                            Text('₺${cartProvider.shippingFee.toStringAsFixed(2)}'),
+                          ],
+                        ),
+                        const Divider(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
                             const Text(
-                              'Toplam Tutar:',
+                              'Toplam:',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             Text(
-                              '₺${totalAmount.toStringAsFixed(2)}',
+                              '₺${cartProvider.grandTotal.toStringAsFixed(2)}',
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -140,40 +198,13 @@ class CartScreen extends StatelessWidget {
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () {
-                            // TODO: Sipariş verme işlemi
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Sipariş Onayı'),
-                                content: const Text('Siparişinizi onaylıyor musunuz?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text('İptal'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Siparişiniz alındı!'),
-                                          backgroundColor: Colors.green,
-                                        ),
-                                      );
-                                      Navigator.pop(context); // Sepet sayfasını kapat
-                                    },
-                                    child: const Text('Onayla'),
-                                  ),
-                                ],
-                              ),
-                            );
+                            Navigator.pushNamed(context, '/payment');
                           },
                           style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
                             minimumSize: const Size(double.infinity, 50),
                           ),
                           child: const Text(
-                            'Sipariş Ver',
+                            'Ödemeye Geç',
                             style: TextStyle(fontSize: 18),
                           ),
                         ),

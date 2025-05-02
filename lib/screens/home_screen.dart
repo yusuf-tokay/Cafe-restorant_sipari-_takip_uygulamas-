@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../widgets/category_chip.dart';
 import '../widgets/product_card.dart';
-import '../data/sample_products.dart';
-import '../models/product.dart';
+import '../providers/cart_provider.dart';
+import '../services/product_service.dart';
+import 'settings_screen.dart';
+import 'reservation_screen.dart';
+import 'favorites_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -35,29 +39,87 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  List<Product> getFilteredProducts() {
-    if (selectedCategory == 'Tümü') {
-      return sampleProducts;
-    }
-    return sampleProducts.where((product) => product.category == selectedCategory).toList();
-  }
-
-  List<Product> getFavoriteProducts() {
-    return sampleProducts.where((product) => product.isFavorite).toList();
-  }
-
-  List<Product> getOnSaleProducts() {
-    return sampleProducts.where((product) => product.isOnSale).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
+    final productService = Provider.of<ProductService>(context);
+    final cartProvider = Provider.of<CartProvider>(context);
+
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Menü'),
-        centerTitle: true,
+        title: Text(
+          'Cafe Restaurant',
+          style: TextStyle(
+            color: Colors.blue[900],
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.calendar_today, color: Colors.blue[900]),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ReservationScreen()),
+              );
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.favorite, color: Colors.blue[900]),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => FavoritesScreen()),
+              );
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.settings, color: Colors.blue[900]),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SettingsScreen()),
+              );
+            },
+          ),
+          Stack(
+            children: [
+              IconButton(
+                icon: Icon(Icons.shopping_cart, color: Colors.blue[900]),
+                onPressed: () {
+                  Navigator.pushNamed(context, '/cart');
+                },
+              ),
+              if (cartProvider.items.isNotEmpty)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '${cartProvider.items.length}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
+          labelColor: Colors.blue[900],
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: Colors.blue[900],
           tabs: const [
             Tab(text: 'Tüm Ürünler'),
             Tab(text: 'Kampanyalılar'),
@@ -97,46 +159,86 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
               // Ürün listesi
               Expanded(
-                child: buildProductGrid(getFilteredProducts()),
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.75,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  itemCount: selectedCategory == 'Tümü'
+                      ? productService.products.length
+                      : productService.getProductsByCategory(selectedCategory).length,
+                  itemBuilder: (context, index) {
+                    final products = selectedCategory == 'Tümü'
+                        ? productService.products
+                        : productService.getProductsByCategory(selectedCategory);
+                    return ProductCard(
+                      product: products[index],
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/product-detail',
+                          arguments: products[index],
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ],
           ),
           // Kampanyalı Ürünler Sekmesi
-          buildProductGrid(getOnSaleProducts()),
+          GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.75,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+            ),
+            itemCount: productService.getOnSaleProducts().length,
+            itemBuilder: (context, index) {
+              final products = productService.getOnSaleProducts();
+              return ProductCard(
+                product: products[index],
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    '/product-detail',
+                    arguments: products[index],
+                  );
+                },
+              );
+            },
+          ),
           // Favori Ürünler Sekmesi
-          buildProductGrid(getFavoriteProducts()),
+          GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.75,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+            ),
+            itemCount: productService.products.where((p) => p.isFavorite).length,
+            itemBuilder: (context, index) {
+              final products = productService.products.where((p) => p.isFavorite).toList();
+              return ProductCard(
+                product: products[index],
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    '/product-detail',
+                    arguments: products[index],
+                  );
+                },
+              );
+            },
+          ),
         ],
       ),
-    );
-  }
-
-  Widget buildProductGrid(List<Product> products) {
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.75,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-      ),
-      itemCount: products.length,
-      itemBuilder: (context, index) {
-        return ProductCard(
-          product: products[index],
-          onTap: () {
-            Navigator.pushNamed(
-              context,
-              '/product-detail',
-              arguments: products[index],
-            );
-          },
-          onFavoritePressed: () {
-            setState(() {
-              products[index].toggleFavorite();
-            });
-          },
-        );
-      },
     );
   }
 } 

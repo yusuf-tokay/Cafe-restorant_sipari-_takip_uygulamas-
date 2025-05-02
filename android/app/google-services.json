@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "772689919226",
+    "project_id": "cafemobiluygulama",
+    "storage_bucket": "cafemobiluygulama.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:772689919226:android:558545f8639b8a9a079d43",
+        "android_client_info": {
+          "package_name": "com.example.cafe_restaurant_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjJarh0iaM712W8J88CowpViblagPoMUs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/product.dart';
+import '../models/cart_item.dart';
+import '../providers/cart_provider.dart';
+import '../providers/favorites_provider.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final Product product;
@@ -11,6 +15,9 @@ class ProductDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cartProvider = Provider.of<CartProvider>(context);
+    final favoritesProvider = Provider.of<FavoritesProvider>(context);
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -30,6 +37,21 @@ class ProductDetailScreen extends StatelessWidget {
                 },
               ),
             ),
+            actions: [
+              IconButton(
+                icon: Icon(
+                  favoritesProvider.isFavorite(product.id)
+                      ? Icons.favorite
+                      : Icons.favorite_border,
+                  color: favoritesProvider.isFavorite(product.id)
+                      ? Colors.red
+                      : Colors.white,
+                ),
+                onPressed: () {
+                  favoritesProvider.toggleFavorite(product);
+                },
+              ),
+            ],
           ),
           // Ürün detayları
           SliverToBoxAdapter(
@@ -51,14 +73,33 @@ class ProductDetailScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Text(
-                        '₺${product.price.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
+                      if (product.isOnSale) ...[
+                        Text(
+                          '₺${product.price.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            decoration: TextDecoration.lineThrough,
+                            color: Colors.grey[600],
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '₺${product.salePrice!.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ] else
+                        Text(
+                          '₺${product.price.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -93,7 +134,7 @@ class ProductDetailScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
-                    children: product.ingredients
+                    children: (product.ingredients ?? [])
                         .map((ingredient) => Chip(
                               label: Text(ingredient),
                               backgroundColor: Colors.grey[200],
@@ -109,17 +150,31 @@ class ProductDetailScreen extends StatelessWidget {
       // Sepete ekle butonu
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(16.0),
           child: ElevatedButton(
             onPressed: () {
-              // TODO: Sepete ekleme işlemi
+              cartProvider.addItem(
+                CartItem(
+                  id: DateTime.now().toString(),
+                  productId: product.id,
+                  name: product.name,
+                  quantity: 1,
+                  price: product.isOnSale ? product.salePrice! : product.price,
+                  imageUrl: product.imageUrl,
+                ),
+              );
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('${product.name} sepete eklendi'),
                   duration: const Duration(seconds: 2),
+                  action: SnackBarAction(
+                    label: 'Sepete Git',
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/cart');
+                    },
+                  ),
                 ),
               );
-              Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
