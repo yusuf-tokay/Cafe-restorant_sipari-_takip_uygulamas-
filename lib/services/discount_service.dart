@@ -16,4 +16,11 @@ class DiscountService with ChangeNotifier {
   bool isValidDiscountCode(String code) {
     return _discountCodes.containsKey(code.toUpperCase());
   }
+
+  Future<void> addSampleDiscountCodes() async {
+    // Örnek indirim kodları zaten _discountCodes map'inde tanımlı
+    // Bu metot şu an için boş bırakılabilir veya ileride Firebase gibi
+    // bir veritabanına indirim kodlarını yüklemek için kullanılabilir
+    notifyListeners();
+  }
 } 

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../providers/cart_provider.dart';
 import '../providers/favorites_provider.dart';
+import '../theme/app_theme.dart';
 
 class ProductDetailsScreen extends StatelessWidget {
   final Product product;
@@ -27,7 +28,7 @@ class ProductDetailsScreen extends StatelessWidget {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.asset(
+                  Image.network(
                     product.imageUrl,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
@@ -55,15 +56,21 @@ class ProductDetailsScreen extends StatelessWidget {
             actions: [
               IconButton(
                 icon: Icon(
-                  favoritesProvider.isFavorite(product.id)
-                      ? Icons.favorite
-                      : Icons.favorite_border,
-                  color: favoritesProvider.isFavorite(product.id)
-                      ? Colors.red
-                      : Colors.white,
+                  favoritesProvider.isFavorite(product) ? Icons.favorite : Icons.favorite_border,
+                  color: favoritesProvider.isFavorite(product) ? Colors.red : Colors.white,
                 ),
                 onPressed: () {
-                  favoritesProvider.toggleFavorite(product);
+                  if (favoritesProvider.isFavorite(product)) {
+                    favoritesProvider.removeFromFavorites(product);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${product.name} favorilerden çıkarıldı')),
+                    );
+                  } else {
+                    favoritesProvider.addToFavorites(product);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${product.name} favorilere eklendi')),
+                    );
+                  }
                 },
               ),
             ],
@@ -74,79 +81,75 @@ class ProductDetailsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    product.name,
+                    style: AppTheme.titleStyle.copyWith(fontSize: 24),
+                  ),
+                  const SizedBox(height: 8),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              product.name,
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              product.category,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
+                      Text(
+                        '${product.price.toStringAsFixed(2)} TL',
+                        style: AppTheme.titleStyle.copyWith(
+                          color: AppTheme.primaryColor,
+                          fontSize: 20,
                         ),
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          if (product.isOnSale) ...[
-                            Text(
-                              '₺${product.price.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontSize: 16,
-                                decoration: TextDecoration.lineThrough,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            Text(
-                              '₺${product.salePrice!.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.red,
-                              ),
-                            ),
-                          ] else
-                            Text(
-                              '₺${product.price.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green,
-                              ),
-                            ),
-                        ],
-                      ),
+                      if (product.isOnSale && product.salePrice != null) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          '${product.salePrice!.toStringAsFixed(2)} TL',
+                          style: AppTheme.bodyStyle.copyWith(
+                            decoration: TextDecoration.lineThrough,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Açıklama',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
                   Text(
                     product.description,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      height: 1.5,
+                    style: AppTheme.bodyStyle,
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        cartProvider.addItem(
+                          CartItem(
+                            id: DateTime.now().toString(),
+                            productId: product.id,
+                            name: product.name,
+                            quantity: 1,
+                            price: product.isOnSale ? (product.salePrice ?? product.price) : product.price,
+                            imageUrl: product.imageUrl,
+                            extras: [],
+                          ),
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${product.name} sepete eklendi'),
+                            action: SnackBarAction(
+                              label: 'Sepete Git',
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/cart');
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.shopping_cart),
+                      label: const Text('Sepete Ekle'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -154,41 +157,6 @@ class ProductDetailsScreen extends StatelessWidget {
             ),
           ),
         ],
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: ElevatedButton(
-            onPressed: () {
-              cartProvider.addToCart(product);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${product.name} sepete eklendi'),
-                  duration: const Duration(seconds: 2),
-                  action: SnackBarAction(
-                    label: 'Sepete Git',
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/cart');
-                    },
-                  ),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text(
-              'Sepete Ekle',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

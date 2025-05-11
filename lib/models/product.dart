@@ -11,6 +11,7 @@ class Product {
   final String category;
   bool isFavorite;
   final double? salePrice;
+  final List<String>? extras;
 
   Product({
     required this.id,
@@ -25,6 +26,7 @@ class Product {
     required this.category,
     this.isFavorite = false,
     this.salePrice,
+    this.extras = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -41,6 +43,7 @@ class Product {
       'category': category,
       'isFavorite': isFavorite,
       'salePrice': salePrice,
+      'extras': extras ?? [],
     };
   }
 
@@ -58,6 +61,7 @@ class Product {
       category: map['category'] as String,
       isFavorite: map['isFavorite'] as bool? ?? false,
       salePrice: map['salePrice'] as double?,
+      extras: map['extras'] != null ? List<String>.from(map['extras'] as List) : [],
     );
   }
 
@@ -74,6 +78,7 @@ class Product {
     String? category,
     bool? isFavorite,
     double? salePrice,
+    List<String>? extras,
   }) {
     return Product(
       id: id ?? this.id,
@@ -88,6 +93,7 @@ class Product {
       category: category ?? this.category,
       isFavorite: isFavorite ?? this.isFavorite,
       salePrice: salePrice ?? this.salePrice,
+      extras: extras ?? this.extras,
     );
   }
 

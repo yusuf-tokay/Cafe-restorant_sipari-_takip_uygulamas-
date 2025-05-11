@@ -3,6 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/reservation_service.dart';
 import '../models/reservation.dart';
+import 'package:provider/provider.dart';
+import '../providers/reservation_provider.dart';
+import '../theme/app_theme.dart';
 
 class ReservationScreen extends StatefulWidget {
   @override
@@ -16,6 +19,8 @@ class _ReservationScreenState extends State<ReservationScreen> {
   String _selectedTime = '12:00';
   int _numberOfPeople = 2;
   List<Reservation> _userReservations = [];
+  String name = '';
+  String phone = '';
 
   final List<String> _availableTimes = [
     '12:00', '13:00', '14:00', '15:00', '16:00',
@@ -111,187 +116,376 @@ class _ReservationScreenState extends State<ReservationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(
-          'Rezervasyon',
-          style: TextStyle(
-            color: Colors.blue[900],
-            fontWeight: FontWeight.bold,
-          ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: AppTheme.primaryLinearGradient,
         ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: IconThemeData(color: Colors.blue[900]),
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Padding(
-                padding: EdgeInsets.all(20),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Yeni Rezervasyon',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue[900],
-                        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // App Bar
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Rezervasyon',
+                      style: AppTheme.textTheme.titleLarge?.copyWith(
+                        color: Colors.white,
                       ),
-                      SizedBox(height: 20),
-                      ListTile(
-                        title: Text('Tarih'),
-                        subtitle: Text(
-                          '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                        ),
-                        trailing: Icon(Icons.calendar_today, color: Colors.blue[900]),
-                        onTap: () => _selectDate(context),
-                      ),
-                      SizedBox(height: 20),
-                      DropdownButtonFormField<String>(
-                        value: _selectedTime,
-                        decoration: InputDecoration(
-                          labelText: 'Saat',
-                          border: OutlineInputBorder(),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.blue[900]!),
-                          ),
-                        ),
-                        items: _availableTimes.map((time) {
-                          return DropdownMenuItem(
-                            value: time,
-                            child: Text(time),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedTime = value!;
-                          });
-                        },
-                      ),
-                      SizedBox(height: 20),
-                      TextFormField(
-                        initialValue: _numberOfPeople.toString(),
-                        decoration: InputDecoration(
-                          labelText: 'Kişi Sayısı',
-                          border: OutlineInputBorder(),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.blue[900]!),
-                          ),
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Lütfen kişi sayısını girin';
-                          }
-                          final number = int.tryParse(value);
-                          if (number == null || number < 1) {
-                            return 'Geçerli bir sayı girin';
-                          }
-                          return null;
-                        },
-                        onSaved: (value) {
-                          _numberOfPeople = int.parse(value!);
-                        },
-                      ),
-                      SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: _createReservation,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue[900],
-                          minimumSize: Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: Text('Rezervasyon Yap'),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            SizedBox(height: 20),
-            Text(
-              'Rezervasyonlarım',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue[900],
-              ),
-            ),
-            SizedBox(height: 10),
-            _userReservations.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'Henüz rezervasyonunuz yok',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
+
+              // Ana İçerik
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceColor,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30),
                     ),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    itemCount: _userReservations.length,
-                    itemBuilder: (context, index) {
-                      final reservation = _userReservations[index];
-                      return Card(
-                        margin: EdgeInsets.only(bottom: 10),
-                        child: ListTile(
-                          title: Text(
-                            '${reservation.date.day}/${reservation.date.month}/${reservation.date.year} - ${reservation.time}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Rezervasyon Formu
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
                           ),
-                          subtitle: Column(
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('${reservation.numberOfPeople} Kişi'),
-                              SizedBox(height: 4),
+                              Text(
+                                'Rezervasyon Bilgileri',
+                                style: AppTheme.textTheme.titleLarge,
+                              ),
+                              const SizedBox(height: 24),
+
+                              // Tarih Seçimi
+                              Text(
+                                'Tarih',
+                                style: AppTheme.textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 8),
+                              InkWell(
+                                onTap: () => _selectDate(context),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: AppTheme.primaryColor.withOpacity(0.3),
+                                    ),
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        _selectedDate == null ? 'Tarih Seçin' : '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                                        style: AppTheme.textTheme.bodyMedium?.copyWith(
+                                          color: AppTheme.textColor.withOpacity(0.7),
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.calendar_today,
+                                        color: AppTheme.primaryColor,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Saat Seçimi
+                              Text(
+                                'Saat',
+                                style: AppTheme.textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 8),
+                              InkWell(
+                                onTap: () async {
+                                  final picked = await showTimePicker(
+                                    context: context,
+                                    initialTime: TimeOfDay.fromDateTime(DateTime.now()),
+                                  );
+                                  if (picked != null) {
+                                    setState(() {
+                                      _selectedTime = picked.format(context);
+                                    });
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: AppTheme.primaryColor.withOpacity(0.3),
+                                    ),
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        _selectedTime == null ? 'Saat Seçin' : _selectedTime,
+                                        style: AppTheme.textTheme.bodyMedium?.copyWith(
+                                          color: AppTheme.textColor.withOpacity(0.7),
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.access_time,
+                                        color: AppTheme.primaryColor,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Kişi Sayısı
+                              Text(
+                                'Kişi Sayısı',
+                                style: AppTheme.textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 8),
                               Container(
-                                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: _getStatusColor(reservation.status),
+                                  border: Border.all(
+                                    color: AppTheme.primaryColor.withOpacity(0.3),
+                                  ),
                                   borderRadius: BorderRadius.circular(15),
                                 ),
-                                child: Text(
-                                  _getStatusText(reservation.status),
-                                  style: TextStyle(color: Colors.white),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      '${_numberOfPeople} Kişi',
+                                      style: AppTheme.textTheme.bodyMedium,
+                                    ),
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.remove_circle_outline,
+                                            color: AppTheme.primaryColor,
+                                          ),
+                                          onPressed: () => setState(() => _numberOfPeople--),
+                                        ),
+                                        Text(
+                                          '$_numberOfPeople',
+                                          style: AppTheme.textTheme.titleMedium,
+                                        ),
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.add_circle_outline,
+                                            color: AppTheme.primaryColor,
+                                          ),
+                                          onPressed: () => setState(() => _numberOfPeople++),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Not
+                              Text(
+                                'Not',
+                                style: AppTheme.textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 8),
+                              TextField(
+                                maxLines: 3,
+                                decoration: InputDecoration(
+                                  hintText: 'Özel isteklerinizi belirtebilirsiniz...',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                    borderSide: BorderSide(
+                                      color: AppTheme.primaryColor.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                    borderSide: BorderSide(
+                                      color: AppTheme.primaryColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+
+                              // Rezervasyon Yap Butonu
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    if (_formKey.currentState!.validate() && _selectedDate != null && _selectedTime != null) {
+                                      _formKey.currentState!.save();
+                                      Provider.of<ReservationProvider>(context, listen: false).addReservation(
+                                        Reservation(
+                                          id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                          userId: 'user123',
+                                          userName: name,
+                                          userEmail: 'user@example.com',
+                                          date: _selectedDate!,
+                                          time: _selectedTime,
+                                          numberOfPeople: _numberOfPeople,
+                                          createdAt: DateTime.now(),
+                                        ),
+                                      );
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Rezervasyonunuz alındı!')),
+                                      );
+                                      Navigator.pop(context);
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.primaryColor,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Rezervasyon Yap',
+                                    style: AppTheme.textTheme.titleMedium?.copyWith(
+                                      color: Colors.white,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      );
-                    },
+
+                        const SizedBox(height: 24),
+
+                        // Rezervasyon Bilgileri
+                        Text(
+                          'Rezervasyon Bilgileri',
+                          style: AppTheme.textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(15),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              _buildInfoRow(
+                                icon: Icons.access_time,
+                                title: 'Çalışma Saatleri',
+                                subtitle: 'Her gün 09:00 - 22:00',
+                              ),
+                              const Divider(),
+                              _buildInfoRow(
+                                icon: Icons.phone,
+                                title: 'Rezervasyon',
+                                subtitle: '+90 555 123 4567',
+                              ),
+                              const Divider(),
+                              _buildInfoRow(
+                                icon: Icons.info,
+                                title: 'Bilgi',
+                                subtitle: 'Rezervasyonlar en az 2 saat önceden yapılmalıdır.',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-          ],
+                ),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              color: AppTheme.primaryColor,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTheme.textTheme.titleSmall,
+                ),
+                Text(
+                  subtitle,
+                  style: AppTheme.textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.textColor.withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class UserDashboard extends StatelessWidget {
   @override
@@ -8,6 +9,25 @@ class UserDashboard extends StatelessWidget {
       appBar: AppBar(
         title: Text('Kullanıcı Paneli'),
         backgroundColor: Colors.red[900],
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: () async {
+              try {
+                await FirebaseAuth.instance.signOut();
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/login',
+                  (route) => false,
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Çıkış yapılırken bir hata oluştu')),
+                );
+              }
+            },
+          ),
+        ],
       ),
       body: GridView.count(
         crossAxisCount: 2,

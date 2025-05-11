@@ -300,48 +300,26 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       try {
-        final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
+        UserCredential userCredential = await FirebaseAuth.instance
+            .signInWithEmailAndPassword(email: _emailController.text.trim(), password: _passwordController.text);
 
-        final userDoc = await FirebaseFirestore.instance
+        DocumentSnapshot adminDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(userCredential.user!.uid)
             .get();
 
-        if (!userDoc.exists) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Kullanıcı Firestore\'da bulunamadı!')),
+        if (adminDoc.exists && adminDoc['role'] == 'admin') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AdminDashboard(),
+            ),
           );
-          setState(() { _isLoading = false; });
-          return;
-        }
-
-        final userData = userDoc.data();
-        if (userData == null || userData is! Map<String, dynamic>) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Kullanıcı verisi hatalı! Lütfen yöneticinize başvurun.')),
-          );
-          setState(() { _isLoading = false; });
-          return;
-        }
-
-        final isAdmin = userData['isAdmin'] == true;
-        if (!isAdmin) {
+        } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Bu hesap yönetici hesabı değil!')),
           );
-          setState(() { _isLoading = false; });
-          return;
         }
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => AdminDashboard(),
-          ),
-        );
       } on FirebaseAuthException catch (e) {
         String errorMessage = 'Giriş başarısız';
         if (e.code == 'user-not-found') {

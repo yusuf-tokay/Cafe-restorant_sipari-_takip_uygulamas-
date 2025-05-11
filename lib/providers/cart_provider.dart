@@ -15,15 +15,16 @@ class CartProvider with ChangeNotifier {
 
   double get grandTotal => totalAmount + shippingFee;
 
-  void addItem(CartItem item) {
-    final existingIndex = _items.indexWhere((i) => i.productId == item.productId);
-    
+  double get totalPrice => _items.fold(0, (sum, item) => sum + item.total);
+
+  void addItem(CartItem item, {int quantity = 1, List<String>? extras}) {
+    final existingIndex = _items.indexWhere((i) => i.productId == item.productId && (extras == null || i.extras == extras));
     if (existingIndex >= 0) {
       _items[existingIndex] = _items[existingIndex].copyWith(
-        quantity: _items[existingIndex].quantity + 1,
+        quantity: _items[existingIndex].quantity + quantity,
       );
     } else {
-      _items.add(item);
+      _items.add(item.copyWith(quantity: quantity, extras: extras));
     }
     notifyListeners();
   }
@@ -48,5 +49,24 @@ class CartProvider with ChangeNotifier {
   void clearCart() {
     _items.clear();
     notifyListeners();
+  }
+
+  void increaseQuantity(String productId) {
+    final index = _items.indexWhere((item) => item.productId == productId);
+    if (index >= 0) {
+      _items[index] = _items[index].copyWith(quantity: _items[index].quantity + 1);
+      notifyListeners();
+    }
+  }
+
+  void decreaseQuantity(String productId) {
+    final index = _items.indexWhere((item) => item.productId == productId);
+    if (index >= 0 && _items[index].quantity > 1) {
+      _items[index] = _items[index].copyWith(quantity: _items[index].quantity - 1);
+      notifyListeners();
+    } else if (index >= 0 && _items[index].quantity == 1) {
+      _items.removeAt(index);
+      notifyListeners();
+    }
   }
 } 

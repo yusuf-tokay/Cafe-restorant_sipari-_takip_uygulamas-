@@ -17,4 +17,11 @@ class ProductService with ChangeNotifier {
   Product getProductById(String id) {
     return _products.firstWhere((product) => product.id == id);
   }
+
+  Future<void> addSampleProducts() async {
+    // Örnek ürünler zaten sample_products.dart dosyasından yükleniyor
+    // Bu metot şu an için boş bırakılabilir veya ileride Firebase gibi
+    // bir veritabanına ürünleri yüklemek için kullanılabilir
+    notifyListeners();
+  }
 } 

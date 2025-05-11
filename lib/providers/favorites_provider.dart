@@ -2,25 +2,30 @@ import 'package:flutter/foundation.dart';
 import '../models/product.dart';
 
 class FavoritesProvider with ChangeNotifier {
-  final List<String> _favoriteIds = [];
+  final List<Product> _favorites = [];
 
-  List<String> get favoriteIds => [..._favoriteIds];
+  List<Product> get favorites => [..._favorites];
 
-  bool isFavorite(String productId) {
-    return _favoriteIds.contains(productId);
-  }
-
-  void toggleFavorite(Product product) {
-    if (isFavorite(product.id)) {
-      _favoriteIds.remove(product.id);
-    } else {
-      _favoriteIds.add(product.id);
-    }
+  // Uygulamadaki tüm ürünlerin listesi (örnek için)
+  List<Product> _allProducts = [];
+  set allProducts(List<Product> products) {
+    _allProducts = products;
     notifyListeners();
   }
 
-  void removeFromFavorites(String productId) {
-    _favoriteIds.removeWhere((id) => id == productId);
+  bool isFavorite(Product product) {
+    return _favorites.any((p) => p.id == product.id);
+  }
+
+  void addToFavorites(Product product) {
+    if (!isFavorite(product)) {
+      _favorites.add(product);
+      notifyListeners();
+    }
+  }
+
+  void removeFromFavorites(Product product) {
+    _favorites.removeWhere((p) => p.id == product.id);
     notifyListeners();
   }
 } 

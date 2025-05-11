@@ -108,4 +108,35 @@ class Order {
       discountAmount: map['discountAmount'],
     );
   }
+
+  double get totalPrice => totalAmount;
+  List<Product> get items => products;
+
+  Order copyWith({
+    String? id,
+    String? userId,
+    List<Product>? products,
+    double? totalAmount,
+    String? status,
+    DateTime? createdAt,
+    DateTime? completedAt,
+    String? deliveryAddress,
+    String? paymentMethod,
+    String? discountCode,
+    double? discountAmount,
+  }) {
+    return Order(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      products: products ?? this.products,
+      totalAmount: totalAmount ?? this.totalAmount,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      completedAt: completedAt ?? this.completedAt,
+      deliveryAddress: deliveryAddress ?? this.deliveryAddress,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      discountCode: discountCode ?? this.discountCode,
+      discountAmount: discountAmount ?? this.discountAmount,
+    );
+  }
 } 
