@@ -3,7 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'admin_dashboard.dart';
 import 'home_screen.dart';
-import 'register_screen.dart';
+import 'qr_scanner_screen.dart';
+import 'qr_code_display_screen.dart';
+import 'package:provider/provider.dart';
+import '../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -15,164 +18,277 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _isAdminLogin = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue[900],
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Cafe Restaurant',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+      body: Stack(
+        children: [
+          // Dekoratif arka plan
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFffb347), // sıcak turuncu
+                  Color(0xFFffcc33), // altın sarısı
+                  Color(0xFFe57373), // kırmızımsı
+                  Color(0xFF6d4c41), // koyu kahve
+                ],
+              ),
+            ),
+          ),
+          // Hafif dekoratif görsel (ör: tabak)
+          Positioned(
+            top: -40,
+            right: -40,
+            child: Opacity(
+              opacity: 0.12,
+              child: Image.network(
+                'https://cdn-icons-png.flaticon.com/512/3075/3075977.png',
+                width: 200,
+                height: 200,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Logo ve başlık
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(60),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 30,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.restaurant_menu,
+                      size: 70,
+                      color: Color(0xFFe57373),
+                    ),
                   ),
-                ),
-                SizedBox(height: 50),
-                Container(
-                  padding: EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 10,
-                        offset: Offset(0, 5),
+                  const SizedBox(height: 24),
+                  Text(
+                    "Amida Restaurant'a Hoş Geldiniz",
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Lezzetli anlar, mutlu sofralar!',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.white70,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const SizedBox(height: 36),
+                  // QR ile Giriş
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => QrScannerScreen()),
+                      );
+                      if (result != null && result is String) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => HomeScreen()),
+                        );
+                      }
+                    },
+                    icon: Icon(Icons.qr_code_scanner, size: 32),
+                    label: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8),
+                      child: Text(
+                        'QR ile Giriş',
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                       ),
-                    ],
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFFe57373),
+                      foregroundColor: Colors.white,
+                      elevation: 8,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      minimumSize: Size(double.infinity, 60),
+                    ),
                   ),
-                  child: Form(
-                    key: _formKey,
+                  const SizedBox(height: 12),
+                  // QR Kodunu Göster Butonu
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => QrCodeDisplayScreen()),
+                      );
+                    },
+                    icon: Icon(Icons.qr_code, color: Colors.white),
+                    label: Text('Giriş QR Kodunu Göster', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(height: 36),
+                  // Yönetici Girişi
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.95),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          _isAdminLogin ? 'Yönetici Girişi' : 'Kullanıcı Girişi',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue[900],
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                        TextFormField(
-                          controller: _emailController,
-                          decoration: InputDecoration(
-                            labelText: 'E-posta',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.email),
-                            filled: true,
-                            fillColor: Colors.grey[100],
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Lütfen e-posta adresinizi girin';
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: 20),
-                        TextFormField(
-                          controller: _passwordController,
-                          decoration: InputDecoration(
-                            labelText: 'Şifre',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.lock),
-                            filled: true,
-                            fillColor: Colors.grey[100],
-                          ),
-                          obscureText: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Lütfen şifrenizi girin';
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: 20),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  _isAdminLogin = true;
-                                });
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: _isAdminLogin ? Colors.blue[900] : Colors.grey[300],
-                                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                              ),
-                              child: Text(
-                                'Yönetici',
-                                style: TextStyle(
-                                  color: _isAdminLogin ? Colors.white : Colors.black,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  _isAdminLogin = false;
-                                });
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: !_isAdminLogin ? Colors.blue[900] : Colors.grey[300],
-                                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                              ),
-                              child: Text(
-                                'Kullanıcı',
-                                style: TextStyle(
-                                  color: !_isAdminLogin ? Colors.white : Colors.black,
-                                ),
-                              ),
-                            ),
+                            Icon(Icons.admin_panel_settings, color: Color(0xFF6d4c41)),
+                            const SizedBox(width: 8),
+                            Text('Yönetici Girişi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Color(0xFF6d4c41))),
                           ],
                         ),
-                        SizedBox(height: 20),
-                        _isLoading
-                            ? CircularProgressIndicator()
-                            : ElevatedButton(
-                                onPressed: _login,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue[900],
-                                  padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                        const SizedBox(height: 16),
+                        Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              TextFormField(
+                                controller: _emailController,
+                                decoration: InputDecoration(
+                                  labelText: 'E-posta',
+                                  prefixIcon: Icon(Icons.email, color: Color(0xFFe57373)),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                    borderSide: BorderSide(
+                                      color: Color(0xFFe57373).withOpacity(0.3),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                    borderSide: BorderSide(
+                                      color: Color(0xFFe57373),
+                                    ),
+                                  ),
                                 ),
-                                child: Text(
-                                  'Giriş Yap',
-                                  style: TextStyle(fontSize: 18, color: Colors.white),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Lütfen e-posta adresinizi girin';
+                                  }
+                                  if (!value.contains('@')) {
+                                    return 'Geçerli bir e-posta adresi girin';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: true,
+                                decoration: InputDecoration(
+                                  labelText: 'Şifre',
+                                  prefixIcon: Icon(Icons.lock, color: Color(0xFFe57373)),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                    borderSide: BorderSide(
+                                      color: Color(0xFFe57373).withOpacity(0.3),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                    borderSide: BorderSide(
+                                      color: Color(0xFFe57373),
+                                    ),
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Lütfen şifrenizi girin';
+                                  }
+                                  if (value.length < 6) {
+                                    return 'Şifre en az 6 karakter olmalıdır';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 24),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: _login,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Color(0xFF6d4c41),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Yönetici Girişi',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                  ),
                                 ),
                               ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                ),
-                SizedBox(height: 20),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => RegisterScreen()),
-                    );
-                  },
-                  child: Text(
-                    'Hesabınız yok mu? Kayıt olun',
-                    style: TextStyle(color: Colors.white),
+                  const SizedBox(height: 32),
+                  // Alt slogan
+                  Text(
+                    'Amida Restaurant - Sofranıza Lezzet Katıyoruz',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 16,
+                      fontStyle: FontStyle.italic,
+                      letterSpacing: 1.1,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -185,40 +301,61 @@ class _LoginScreenState extends State<LoginScreen> {
 
       try {
         final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text,
+          email: _emailController.text.trim(),
           password: _passwordController.text,
         );
 
-        // Kullanıcının admin olup olmadığını kontrol et
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(userCredential.user!.uid)
             .get();
 
-        if (userDoc.exists) {
-          final isAdmin = userDoc.data()!['isAdmin'] == true;
-          
-          if (_isAdminLogin && !isAdmin) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Bu hesap yönetici hesabı değil!')),
-            );
-            return;
-          }
-
-          if (!_isAdminLogin && isAdmin) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Lütfen yönetici girişi yapın!')),
-            );
-            return;
-          }
-
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => isAdmin ? AdminDashboard() : HomeScreen(),
-            ),
+        if (!userDoc.exists) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Kullanıcı Firestore\'da bulunamadı!')),
           );
+          setState(() { _isLoading = false; });
+          return;
         }
+
+        final userData = userDoc.data();
+        if (userData == null || userData is! Map<String, dynamic>) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Kullanıcı verisi hatalı! Lütfen yöneticinize başvurun.')),
+          );
+          setState(() { _isLoading = false; });
+          return;
+        }
+
+        final isAdmin = userData['isAdmin'] == true;
+        if (!isAdmin) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Bu hesap yönetici hesabı değil!')),
+          );
+          setState(() { _isLoading = false; });
+          return;
+        }
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AdminDashboard(),
+          ),
+        );
+      } on FirebaseAuthException catch (e) {
+        String errorMessage = 'Giriş başarısız';
+        if (e.code == 'user-not-found') {
+          errorMessage = 'Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı';
+        } else if (e.code == 'wrong-password') {
+          errorMessage = 'Hatalı şifre';
+        } else if (e.code == 'invalid-email') {
+          errorMessage = 'Geçersiz e-posta adresi';
+        } else if (e.code == 'network-request-failed') {
+          errorMessage = 'İnternet bağlantısı hatası';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Giriş başarısız: ${e.toString()}')),
