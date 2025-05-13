@@ -130,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFe57373),
+                      backgroundColor: Color(0xFF4CAF50),
                       foregroundColor: Colors.white,
                       elevation: 8,
                       shape: RoundedRectangleBorder(
@@ -253,7 +253,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 child: ElevatedButton(
                                   onPressed: _login,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Color(0xFF6d4c41),
+                                    backgroundColor: Color(0xFF2196F3),
                                     foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(vertical: 16),
                                     shape: RoundedRectangleBorder(
