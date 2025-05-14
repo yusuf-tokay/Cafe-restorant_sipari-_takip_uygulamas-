@@ -7,6 +7,7 @@ import 'qr_scanner_screen.dart';
 import 'qr_code_display_screen.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -14,10 +15,103 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _userFormKey = GlobalKey<FormState>();
+  final _adminFormKey = GlobalKey<FormState>();
+  final _userEmailController = TextEditingController();
+  final _userPasswordController = TextEditingController();
+  final _adminEmailController = TextEditingController();
+  final _adminPasswordController = TextEditingController();
   bool _isLoading = false;
+
+  Future<void> _userLogin() async {
+    if (_userFormKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      try {
+        final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _userEmailController.text.trim(),
+          password: _userPasswordController.text,
+        );
+        
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .get();
+
+        if (userDoc.exists) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => HomeScreen()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Kullanıcı bulunamadı')),
+          );
+        }
+      } on FirebaseAuthException catch (e) {
+        String message = 'Giriş başarısız';
+        if (e.code == 'user-not-found') {
+          message = 'Bu e-posta ile kayıtlı kullanıcı bulunamadı';
+        } else if (e.code == 'wrong-password') {
+          message = 'Yanlış şifre';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _adminLogin() async {
+    if (_adminFormKey.currentState!.validate()) {  // Doğru form key'i kullanıyoruz
+      setState(() => _isLoading = true);
+      try {
+        final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _adminEmailController.text.trim(),  // Doğru controller
+          password: _adminPasswordController.text,  // Doğru controller
+        );
+        
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .get();
+
+        if (userDoc.exists && userDoc.data()?['isAdmin'] == true) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AdminDashboard()),
+          );
+        } else {
+          await FirebaseAuth.instance.signOut();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Yönetici yetkisi bulunmamaktadır')),
+          );
+        }
+      } on FirebaseAuthException catch (e) {
+        String message = 'Giriş başarısız';
+        if (e.code == 'user-not-found') {
+          message = 'Bu e-posta ile kayıtlı yönetici bulunamadı';
+        } else if (e.code == 'wrong-password') {
+          message = 'Yanlış şifre';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _userEmailController.dispose();
+    _userPasswordController.dispose();
+    _adminEmailController.dispose();
+    _adminPasswordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -152,7 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     label: Text('Giriş QR Kodunu Göster', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(height: 36),
-                  // Yönetici Girişi
+                  // Kullanıcı Girişi
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(24),
@@ -173,18 +267,19 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.admin_panel_settings, color: Color(0xFF6d4c41)),
+                            Icon(Icons.person, color: Color(0xFF6d4c41)),
                             const SizedBox(width: 8),
-                            Text('Yönetici Girişi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Color(0xFF6d4c41))),
+                            Text('Kullanıcı Girişi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Color(0xFF6d4c41))),
                           ],
                         ),
                         const SizedBox(height: 16),
+                        // Kullanıcı girişi formunda:
                         Form(
-                          key: _formKey,
+                          key: _userFormKey,  // _formKey yerine
                           child: Column(
                             children: [
                               TextFormField(
-                                controller: _emailController,
+                                controller: _userEmailController,  // _emailController yerine
                                 decoration: InputDecoration(
                                   labelText: 'E-posta',
                                   prefixIcon: Icon(Icons.email, color: Color(0xFFe57373)),
@@ -216,7 +311,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 16),
                               TextFormField(
-                                controller: _passwordController,
+                                controller: _userPasswordController,  // _passwordController yerine
                                 obscureText: true,
                                 decoration: InputDecoration(
                                   labelText: 'Şifre',
@@ -251,7 +346,151 @@ class _LoginScreenState extends State<LoginScreen> {
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: _login,
+                                  onPressed: _userLogin,  // _login yerine
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Color(0xFF2196F3),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Giriş Yap',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Hesabınız yok mu?',
+                                    style: TextStyle(color: Colors.grey[600]),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pushNamed(context, '/register');
+                                    },
+                                    child: Text(
+                                      'Kayıt Ol',
+                                      style: TextStyle(
+                                        color: Color(0xFF2196F3),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 36),
+                  // Yönetici Girişi
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.95),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.admin_panel_settings, color: Color(0xFF6d4c41)),
+                            const SizedBox(width: 8),
+                            Text('Yönetici Girişi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Color(0xFF6d4c41))),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        // Yönetici girişi formunda:
+                        Form(
+                          key: _adminFormKey,  // _formKey yerine doğru form key'i kullanıyoruz
+                          child: Column(
+                            children: [
+                              TextFormField(
+                                controller: _adminEmailController,  // _emailController yerine doğru controller
+                                decoration: InputDecoration(
+                                  labelText: 'E-posta',
+                                  prefixIcon: Icon(Icons.email, color: Color(0xFFe57373)),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                    borderSide: BorderSide(
+                                      color: Color(0xFFe57373).withOpacity(0.3),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                    borderSide: BorderSide(
+                                      color: Color(0xFFe57373),
+                                    ),
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Lütfen e-posta adresinizi girin';
+                                  }
+                                  if (!value.contains('@')) {
+                                    return 'Geçerli bir e-posta adresi girin';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              TextFormField(
+                                controller: _adminPasswordController,  // _passwordController yerine doğru controller
+                                obscureText: true,
+                                decoration: InputDecoration(
+                                  labelText: 'Şifre',
+                                  prefixIcon: Icon(Icons.lock, color: Color(0xFFe57373)),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                    borderSide: BorderSide(
+                                      color: Color(0xFFe57373).withOpacity(0.3),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                    borderSide: BorderSide(
+                                      color: Color(0xFFe57373),
+                                    ),
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Lütfen şifrenizi girin';
+                                  }
+                                  if (value.length < 6) {
+                                    return 'Şifre en az 6 karakter olmalıdır';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 24),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : _adminLogin,  // Loading durumunu kontrol ediyoruz
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Color(0xFF2196F3),
                                     foregroundColor: Colors.white,
@@ -292,57 +531,4 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-
-  Future<void> _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
-
-      try {
-        UserCredential userCredential = await FirebaseAuth.instance
-            .signInWithEmailAndPassword(email: _emailController.text.trim(), password: _passwordController.text);
-
-        DocumentSnapshot adminDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userCredential.user!.uid)
-            .get();
-
-        if (adminDoc.exists && adminDoc['role'] == 'admin') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AdminDashboard(),
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Bu hesap yönetici hesabı değil!')),
-          );
-        }
-      } on FirebaseAuthException catch (e) {
-        String errorMessage = 'Giriş başarısız';
-        if (e.code == 'user-not-found') {
-          errorMessage = 'Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı';
-        } else if (e.code == 'wrong-password') {
-          errorMessage = 'Hatalı şifre';
-        } else if (e.code == 'invalid-email') {
-          errorMessage = 'Geçersiz e-posta adresi';
-        } else if (e.code == 'network-request-failed') {
-          errorMessage = 'İnternet bağlantısı hatası';
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Giriş başarısız: ${e.toString()}')),
-        );
-      } finally {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-} 
+}
